@@ -1,6 +1,7 @@
 import pytest
 from unittest import mock
 from rentomatic.domain.storageroom import StorageRoom
+from rentomatic.use_cases import request_objects as ro
 from rentomatic.use_cases import storageroom_use_case as uc
 
 
@@ -42,7 +43,12 @@ def test_storage_room_list_without_parameters(domain_storage_rooms):
     repo.list.return_value = domain_storage_rooms
 
     storage_room_list_use_case = uc.StorageRoomListUseCase(repo)
-    result = storage_room_list_use_case.execute()
+    request_object = ro.StorageRoomListRequestObject.from_dict({})
 
+    response_object = storage_room_list_use_case.execute(request_object)
+
+    assert bool(response_object) is True
     repo.list.assert_called_with()
-    assert result == domain_storage_rooms
+
+    assert response_object.value == domain_storage_rooms
+
