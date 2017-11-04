@@ -1,4 +1,7 @@
-class StorageRoom:
+from rentomatic.shared.domain_model import DomainModel
+
+
+class StorageRoom(object):
     def __init__(self, code, size, price, longitude, latitude):
         self.code = code
         self.size = size
@@ -15,3 +18,6 @@ class StorageRoom:
             latitude=dictionnary['latitude'],
             longitude=dictionnary['longitude'],
         )
+
+
+DomainModel.register(StorageRoom)
