@@ -1,7 +1,8 @@
 import pytest
 from unittest import mock
 from rentomatic.domain.storageroom import StorageRoom
-from rentomatic.use_cases import request_objects as ro
+from rentomatic.shared import response_object as res
+from rentomatic.use_cases import request_objects as req
 from rentomatic.use_cases import storageroom_use_case as uc
 
 
@@ -38,17 +39,62 @@ def domain_storage_rooms():
     return [storageroom_1, storageroom_2, storageroom_3, storageroom_4]
 
 
-def test_storage_room_list_without_parameters(domain_storage_rooms):
+def test_storageroom_list_without_parameters(domain_storage_rooms):
     repo = mock.Mock()
     repo.list.return_value = domain_storage_rooms
 
-    storage_room_list_use_case = uc.StorageRoomListUseCase(repo)
-    request_object = ro.StorageRoomListRequestObject.from_dict({})
+    storageroom_list_use_case = uc.StorageRoomListUseCase(repo)
+    request_object = req.StorageRoomListRequestObject.from_dict({})
 
-    response_object = storage_room_list_use_case.execute(request_object)
+    response_object = storageroom_list_use_case.execute(request_object)
 
     assert bool(response_object) is True
-    repo.list.assert_called_with()
+    repo.list.assert_called_with(filters=None)
 
     assert response_object.value == domain_storage_rooms
 
+
+def test_storageroom_list_with_filters(domain_storage_rooms):
+    repo = mock.Mock()
+    repo.list.return_value = domain_storage_rooms
+
+    storageroom_list_use_case = uc.StorageRoomListUseCase(repo)
+    qry_filters = {'a': 5}
+    request_object = req.StorageRoomListRequestObject.from_dict({'filters': qry_filters})
+
+    response_object = storageroom_list_use_case.execute(request_object)
+
+    assert bool(response_object) is True
+    repo.list.assert_called_with(filters=qry_filters)
+    assert response_object.value == domain_storage_rooms
+
+
+def test_storageroom_list_handles_generic_error():
+    repo = mock.Mock()
+    repo.list.side_effect = Exception('Just an error message')
+
+    storageroom_list_use_case = uc.StorageRoomListUseCase(repo)
+    request_object = req.StorageRoomListRequestObject.from_dict({})
+
+    response_object = storageroom_list_use_case.execute(request_object)
+
+    assert bool(response_object) is False
+    assert response_object.value == {
+        'type': res.ResponseFailure.SYSTEM_ERROR,
+        'message': "Exception: Just an error message"
+    }
+
+
+def test_storageroom_list_handles_bad_request():
+    repo = mock.Mock()
+
+    storageroom_list_use_case = uc.StorageRoomListUseCase(repo)
+    request_object = req.StorageRoomListRequestObject.from_dict({'filters': 5})
+
+    response_object = storageroom_list_use_case.execute(request_object)
+
+    assert bool(response_object) is False
+    assert response_object.value == {
+        'type': res.ResponseFailure.PARAMETERS_ERROR,
+        'message': "filters: Is not iterable"
+    }
